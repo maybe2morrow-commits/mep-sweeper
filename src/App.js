@@ -547,51 +547,51 @@ export default function App() {
   const [submitStatus, setSubmitStatus] = useState(null);
   const gridRef = useRef(null);
 
-  const addLog = (message, type = 'info') => {
+  const addLog = useCallback((message, type = 'info') => {
     const time = new Date().toLocaleTimeString();
     setDebugLogs(prev => [...prev.slice(-50), { time, message, type }]);
     console.log(`[${type.toUpperCase()}] ${message}`);
-  };
+  }, []);
 
   // Test Supabase connection
   const testConnection = async () => {
-    addLog('Testing Supabase connection...');
+    console.log('Testing Supabase connection...');
     
     if (!supabase) {
-      addLog('Supabase client not initialized!', 'error');
+      console.error('Supabase client not initialized!');
       return;
     }
     
     try {
-      addLog('Attempting to fetch from leaderboard table...');
+      console.log('Attempting to fetch from leaderboard table...');
       const { data, error, status } = await supabase
         .from('leaderboard')
         .select('count')
         .limit(1);
       
       if (error) {
-        addLog(`Supabase error (${status}): ${error.message} [${error.code}]`, 'error');
-        addLog(`Hint: ${error.hint || 'none'}`, 'error');
+        console.error(`Supabase error (${status}): ${error.message} [${error.code}]`);
+        console.error(`Hint: ${error.hint || 'none'}`);
       } else {
-        addLog(`Connection successful! Status: ${status}`, 'success');
-        addLog(`Response: ${JSON.stringify(data)}`, 'success');
+        console.log(`Connection successful! Status: ${status}`);
+        console.log(`Response: ${JSON.stringify(data)}`);
       }
     } catch (e) {
-      addLog(`Exception: ${e.message}`, 'error');
+      console.error(`Exception: ${e.message}`);
     }
   };
 
   // Fetch leaderboard from Supabase
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     setLeaderboardLoading(true);
     setLeaderboardError(null);
     setLeaderboardDebug(null);
-    addLog('Fetching leaderboard...');
+    console.log('Fetching leaderboard...');
     
     if (!supabase) {
       const msg = 'Supabase client not initialized';
       setLeaderboardError(msg);
-      addLog(msg, 'error');
+      console.error(msg);
       setLeaderboardLoading(false);
       return;
     }
@@ -607,10 +607,10 @@ export default function App() {
         const msg = `Supabase error: ${error.message} (${error.code})`;
         setLeaderboardError(msg);
         setLeaderboardDebug(`Status: ${status}, Hint: ${error.hint || 'none'}`);
-        addLog(msg, 'error');
+        console.error(msg);
         setLeaderboard([]);
       } else {
-        addLog(`Fetched ${data?.length || 0} scores`, 'success');
+        console.log(`Fetched ${data?.length || 0} scores`);
         setLeaderboard(Array.isArray(data) ? data : []);
       }
       
@@ -618,22 +618,22 @@ export default function App() {
       const msg = `Exception: ${e.message}`;
       setLeaderboardError(msg);
       setLeaderboardDebug(e.toString());
-      addLog(msg, 'error');
+      console.error(msg);
       setLeaderboard([]);
     }
     
     setLeaderboardLoading(false);
-  };
+  }, []);
 
   // Submit score to Supabase
   const submitScore = async (name, finalScore) => {
     setSubmitStatus('submitting');
-    addLog(`Submitting score: ${name} = ${finalScore}`);
+    console.log(`Submitting score: ${name} = ${finalScore}`);
     
     if (!supabase) {
       const msg = 'Supabase client not initialized';
       setSubmitStatus(`error: ${msg}`);
-      addLog(msg, 'error');
+      console.error(msg);
       return;
     }
     
@@ -649,26 +649,26 @@ export default function App() {
       if (error) {
         const msg = `Supabase error: ${error.message} (${error.code})`;
         setSubmitStatus(`error: ${msg}`);
-        addLog(msg, 'error');
-        addLog(`Hint: ${error.hint || 'none'}`, 'error');
+        console.error(msg);
+        console.error(`Hint: ${error.hint || 'none'}`);
       } else {
         setSubmitStatus('success');
-        addLog(`Score submitted successfully (status: ${status})`, 'success');
+        console.log(`Score submitted successfully (status: ${status})`);
       }
       
     } catch (e) {
       const msg = `Exception: ${e.message}`;
       setSubmitStatus(`error: ${msg}`);
-      addLog(msg, 'error');
+      console.error(msg);
     }
   };
 
   useEffect(() => {
-    addLog('App initialized');
-    addLog(`Supabase URL: ${SUPABASE_URL}`);
-    addLog(`Supabase client: ${supabase ? 'Ready' : 'Failed'}`);
+    console.log('App initialized');
+    console.log(`Supabase URL: ${SUPABASE_URL}`);
+    console.log(`Supabase client: ${supabase ? 'Ready' : 'Failed'}`);
     fetchLeaderboard();
-  }, []);
+  }, [fetchLeaderboard]);
 
   const startGame = () => {
     if (playerName.trim()) {
@@ -680,7 +680,7 @@ export default function App() {
       setScore(0);
       setRound(1);
       setSubmitStatus(null);
-      addLog(`Game started for player: ${playerName}`);
+      console.log(`Game started for player: ${playerName}`);
     }
   };
 
@@ -698,7 +698,7 @@ export default function App() {
     setRound(1);
     setShowRoundComplete(false);
     setSubmitStatus(null);
-    addLog('Game restarted');
+    console.log('Game restarted');
   };
 
   const nextRound = useCallback(() => {
@@ -712,7 +712,7 @@ export default function App() {
     setPathLength(0);
     setLastPlacedTile(null);
     setShowRoundComplete(false);
-    addLog(`Advanced to round ${round + 1}`);
+    console.log(`Advanced to round ${round + 1}`);
   }, [gridWidth, gridHeight, round]);
 
   const checkWinCondition = useCallback((currentGrid) => {
@@ -744,7 +744,7 @@ export default function App() {
       const won = checkWinCondition(grid);
       if (won) {
         setShowRoundComplete(true);
-        addLog(`Round ${round} complete!`, 'success');
+        console.log(`Round ${round} complete!`);
         setTimeout(() => nextRound(), 1500);
       }
     }
@@ -753,11 +753,11 @@ export default function App() {
   const triggerGameOver = async (message) => {
     setGameOverMessage(message);
     setGamePhase('gameover');
-    addLog(`Game over: ${message}`);
+    console.log(`Game over: ${message}`);
     
     if (score > personalBest) {
       setPersonalBest(score);
-      addLog(`New personal best: ${score}`, 'success');
+      console.log(`New personal best: ${score}`);
     }
     
     await submitScore(playerName, score);
